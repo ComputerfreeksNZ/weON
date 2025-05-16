@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weON Technology Virtual Assistant Demo</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #eef2f3, #8e9eab);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #222;
+    }
+
+    p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      line-height: 1.6;
+    }
+
+    footer {
+      margin-top: 80px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    /* Chat Widget Styles */
+    .chat-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #4f46e5;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 50px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 999;
+    }
+
+    .chat-container {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 360px;
+      height: 500px;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      display: none;
+      flex-direction: column;
+      border-radius: 16px;
+      overflow: hidden;
+      z-index: 999;
+    }
+
+    .chat-header {
+      text-align: center;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #374151;
+      background-color: #f1f5f9;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background-color: #f9fafb;
+    }
+
+    .message {
+      padding: 10px 14px;
+      margin: 6px 0;
+      border-radius: 16px;
+      max-width: 80%;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .user {
+      background-color: #4f46e5;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot {
+      background-color: #e2e8f0;
+      color: #111827;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .input-box {
+      display: flex;
+      border-top: 1px solid #e5e7eb;
+      padding: 10px;
+      background: #ffffff;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button.send {
+      margin-left: 8px;
+      padding: 10px 14px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button.send:hover {
+      background-color: #4338ca;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Welcome to weON Technology</h1>
+    <p>
+      Meet your AI-powered Virtual Assistant! Click the bubble in the corner to start chatting — it's here to help you explore, learn, and connect with our tech.
+    </p>
+  </header>
+
+  <footer>
+    &copy; 2025 weON Technology — All rights reserved.
+  </footer>
+
+  <!-- ✅ Chat Toggle Button -->
+  <button class="chat-toggle" onclick="toggleChat()">💬 WeON AI</button>
+
+  <!-- ✅ Popup Chat Widget -->
+  <div class="chat-container" id="chatContainer">
+    <div class="chat-header">🤖 WeON AI Assistant</div>
+    <div class="chat-box" id="chatBox">
+      <div class="message bot">Hi there! How can I assist you today?</div>
+    </div>
+    <div class="input-box">
+      <input type="text" id="userInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)" />
+      <button class="send" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- ✅ WeON AI Script -->
+  <script>
+    const API_URL = "https://informally-intense-frog.ngrok-free.app/v1/chat/completions";
+    const MODEL_NAME = "hermes-3-llama-3.2-3b";
+
+    function toggleChat() {
+      const chat = document.getElementById("chatContainer");
+      chat.style.display = chat.style.display === "flex" ? "none" : "flex";
+    }
+
+    async function sendMessage() {
+      const inputField = document.getElementById("userInput");
+      const message = inputField.value.trim();
+      if (message === "") return;
+
+      const chatBox = document.getElementById("chatBox");
+
+      const userMessage = document.createElement("div");
+      userMessage.className = "message user";
+      userMessage.textContent = message;
+      chatBox.appendChild(userMessage);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      inputField.value = "";
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: MODEL_NAME,
+            messages: [{ role: "user", content: message }]
+          })
+        });
+
+        const data = await response.json();
+        const botText = data?.choices?.[0]?.message?.content || "No response from WeON AI.";
+
+        const botMessage = document.createElement("div");
+        botMessage.className = "message bot";
+        botMessage.textContent = botText;
+        chatBox.appendChild(botMessage);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+      } catch (error) {
+        console.error("Error:", error);
+        const botMessage = document.createElement("div");
+        botMessage.className = "message bot";
+        botMessage.textContent = "⚠️ Unable to connect to WeON AI.";
+        chatBox.appendChild(botMessage);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
+  </script>
+
+  <!-- ✅ Heygen Streaming Avatar Embed -->
+<script>!function(window){const host="https://labs.heygen.com",url=host+"/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiJXYXluZV8yMDI0MDcxMSIsInByZXZpZXdJ%0D%0AbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3YzL2EzZmRiMGM2NTIwMjRmNzk5%0D%0AODRhYWVjMTFlYmYyNjk0XzM0MzUwL3ByZXZpZXdfdGFyZ2V0LndlYnAiLCJuZWVkUmVtb3ZlQmFj%0D%0Aa2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6IjhhMTJkNTQ4OWU2ZjQ5NTY5MmQ3MjE3%0D%0ANTc4Yzc5MWEzIiwidXNlcm5hbWUiOiI0YTI1MDZhYjYyMjE0N2Y1ODUyZjkwMTMzNzkyYzE2NCJ9&inIFrame=1",clientWidth=document.body.clientWidth,wrapDiv=document.createElement("div");wrapDiv.id="heygen-streaming-embed";const container=document.createElement("div");container.id="heygen-streaming-container";const stylesheet=document.createElement("style");stylesheet.innerHTML=`\n  #heygen-streaming-embed {\n    z-index: 9999;\n    position: fixed;\n    left: 40px;\n    bottom: 40px;\n    width: 200px;\n    height: 200px;\n    border-radius: 50%;\n    border: 2px solid #fff;\n    box-shadow: 0px 8px 24px 0px rgba(0, 0, 0, 0.12);\n    transition: all linear 0.1s;\n    overflow: hidden;\n\n    opacity: 0;\n    visibility: hidden;\n  }\n  #heygen-streaming-embed.show {\n    opacity: 1;\n    visibility: visible;\n  }\n  #heygen-streaming-embed.expand {\n    ${clientWidth<540?"height: 266px; width: 96%; left: 50%; transform: translateX(-50%);":"height: 366px; width: calc(366px * 16 / 9);"}\n    border: 0;\n    border-radius: 8px;\n  }\n  #heygen-streaming-container {\n    width: 100%;\n    height: 100%;\n  }\n  #heygen-streaming-container iframe {\n    width: 100%;\n    height: 100%;\n    border: 0;\n  }\n  `;const iframe=document.createElement("iframe");iframe.allowFullscreen=!1,iframe.title="Streaming Embed",iframe.role="dialog",iframe.allow="microphone",iframe.src=url;let visible=!1,initial=!1;window.addEventListener("message",(e=>{e.origin===host&&e.data&&e.data.type&&"streaming-embed"===e.data.type&&("init"===e.data.action?(initial=!0,wrapDiv.classList.toggle("show",initial)):"show"===e.data.action?(visible=!0,wrapDiv.classList.toggle("expand",visible)):"hide"===e.data.action&&(visible=!1,wrapDiv.classList.toggle("expand",visible)))})),container.appendChild(iframe),wrapDiv.appendChild(stylesheet),wrapDiv.appendChild(container),document.body.appendChild(wrapDiv)}(globalThis);</script>
+
+</body>
+</html>
