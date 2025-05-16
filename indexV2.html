@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>weON Technology Demos</title>
+  <style>
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    background: #1a1a1a;
+    color: #dddddd;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 20px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #ffd43b;
+  }
+
+  .demo-nav {
+    display: flex;
+    gap: 12px;
+  }
+
+  .demo-btn {
+    background: linear-gradient(to right, #000000, #ffd43b);
+    color: #ffffff;
+    padding: 10px 20px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .demo-btn.active {
+    outline: 3px solid #ffd43b;
+  }
+
+  .demo-section {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 30px;
+    color: #dddddd;
+  }
+
+  .demo-section.active {
+    display: flex;
+  }
+
+  .chat-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #ffd43b;
+    color: black;
+    padding: 12px 16px;
+    border-radius: 50px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 999;
+  }
+
+  .chat-container {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 360px;
+    height: 500px;
+    background: #2a2a2a;
+    border-radius: 16px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    z-index: 999;
+  }
+
+  .chat-header {
+    background: #333333;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    color: #ffd43b;
+    border-bottom: 1px solid #444;
+  }
+
+  .chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    background: #1a1a1a;
+  }
+
+  .message {
+    margin: 6px 0;
+    padding: 10px 14px;
+    border-radius: 16px;
+    max-width: 75%;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .user {
+    align-self: flex-end;
+    background: #ffd43b;
+    color: #000;
+  }
+
+  .bot {
+    align-self: flex-start;
+    background: #333333;
+    color: #ffffff;
+  }
+
+  .input-box {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #444;
+    background: #2a2a2a;
+  }
+
+  .input-box input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #555;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .input-box button {
+    margin-left: 8px;
+    padding: 10px 14px;
+    background: #ffd43b;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: #777;
+    font-size: 0.9rem;
+    background: #1a1a1a;
+    border-top: 1px solid #2a2a2a;
+  }
+</style>
+</head>
+<body>
+
+
+<!-- ✅ Main Header + Toggle -->
+<header>
+  <h1>weON Technology Demos</h1>
+  <div class="demo-nav">
+    <button onclick="switchDemo('avatar')" id="btn-avatar" class="demo-btn active">weON Interactive AI</button>
+    <button onclick="switchDemo('chat')" id="btn-chat" class="demo-btn">AI Chat Bot</button>
+  </div>
+</header>
+
+<!-- ✅ Content Sections -->
+<div id="avatar" class="demo-section active">
+  <p>Click the floating avatar bubble to begin your interactive experience.</p>
+</div>
+
+<div id="chat" class="demo-section">
+  <p>Click the floating chat bubble below to begin your conversation.</p>
+</div>
+
+<!-- ✅ Footer -->
+<footer style="text-align:center; padding: 20px;">&copy; 2025 weON Technology</footer>
+
+<!-- ✅ Scripts -->
+<script>
+const API_URL = "https://informally-intense-frog.ngrok-free.app/v1/chat/completions";
+const MODEL_NAME = "hermes-3-llama-3.2-3b";
+
+function switchDemo(id) {
+  document.querySelectorAll(".demo-section").forEach(el => el.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+
+  document.querySelectorAll(".demo-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById("btn-" + id).classList.add("active");
+
+  document.getElementById("heygen-streaming-embed")?.remove();
+  document.getElementById("chatToggleButton")?.remove();
+  document.getElementById("chatContainer")?.remove();
+
+  if (id === "avatar") loadHeygen();
+  if (id === "chat") loadChatBot();
+}
+
+function loadHeygen() {
+  const host = "https://labs.heygen.com";
+  const url = host + "/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiJCcnlhbl9JVF9TaXR0aW5nX3B1YmxpYyIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3YzLzMzYzlhYzRhZWFkNDRkZmM4YmMwMDgyYTM1MDYyYTcwXzQ1NTgwL3ByZXZpZXdfdGFsa18zLndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6IjhhMTJkNTQ4OWU2ZjQ5NTY5MmQ3MjE3NTc4Yzc5MWEzIiwidXNlcm5hbWUiOiI0YTI1MDZhYjYyMjE0N2Y1ODUyZjkwMTMzNzkyYzE2NCJ9&inIFrame=1";
+  const wrap = document.createElement("div");
+  wrap.id = "heygen-streaming-embed";
+  wrap.style = "z-index:9999;position:fixed;left:40px;bottom:40px;width:200px;height:200px;border-radius:50%;border:2px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,0.12);overflow:hidden;";
+  const frame = document.createElement("iframe");
+  frame.src = url;
+  frame.allow = "microphone";
+  frame.role = "dialog";
+  frame.title = "Streaming Embed";
+  frame.style = "width:100%;height:100%;border:0;";
+  wrap.appendChild(frame);
+  document.body.appendChild(wrap);
+}
+
+function loadChatBot() {
+  const btn = document.createElement("button");
+  btn.id = "chatToggleButton";
+  btn.className = "chat-toggle";
+  btn.innerText = "💬 WeON AI";
+  btn.onclick = toggleChat;
+  document.body.appendChild(btn);
+
+  const container = document.createElement("div");
+  container.id = "chatContainer";
+  container.className = "chat-container";
+  container.innerHTML = `
+    <div class="chat-header">🤖 WeON AI Assistant</div>
+    <div class="chat-box" id="chatBox">
+      <div class="message bot">Hello! How can I help you today?</div>
+    </div>
+    <div class="input-box">
+      <input type="text" id="userInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  `;
+  document.body.appendChild(container);
+}
+
+function toggleChat() {
+  const chat = document.getElementById("chatContainer");
+  chat.style.display = (chat.style.display === "flex") ? "none" : "flex";
+}
+
+function handleKeyPress(event) {
+  if (event.key === "Enter") sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+  const box = document.getElementById("chatBox");
+  const userMsg = document.createElement("div");
+  userMsg.className = "message user";
+  userMsg.textContent = text;
+  box.appendChild(userMsg);
+  box.scrollTop = box.scrollHeight;
+  input.value = "";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages: [{ role: "user", content: text }]
+      })
+    });
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content || "No response.";
+    const botMsg = document.createElement("div");
+    botMsg.className = "message bot";
+    botMsg.textContent = reply;
+    box.appendChild(botMsg);
+    box.scrollTop = box.scrollHeight;
+  } catch {
+    const errMsg = document.createElement("div");
+    errMsg.className = "message bot";
+    errMsg.textContent = "⚠️ Error contacting AI.";
+    box.appendChild(errMsg);
+  }
+}
+</script>
+
+</body>
+</html>
